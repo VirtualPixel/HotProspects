@@ -5,10 +5,16 @@
 //  Created by Justin Wells on 12/1/22.
 //
 
+import CodeScanner
 import SwiftUI
 
 struct ProspectsView: View {
+    enum FilterType {
+        case none, contacted, uncontacted
+    }
+    
     @EnvironmentObject var prospects: Prospects
+    @State private var isShowingScanner = false
     let filter: FilterType
     
     var body: some View {
@@ -21,7 +27,35 @@ struct ProspectsView: View {
                         Text(prospect.emailAddress)
                             .foregroundColor(.secondary)
                     }
+                    .swipeActions {
+                        if prospect.isContacted {
+                            Button {
+                                prospects.toggle(prospect)
+                            } label: {
+                                Label("Mark Uncontacted", systemImage: "person.crop.circle.badge.xmark")
+                            }
+                            .tint(.blue)
+                        } else {
+                            Button {
+                                prospects.toggle(prospect)
+                            } label: {
+                                Label("Mark Contacted", systemImage: "person.crop.circle.fill.badge.checkmark")
+                            }
+                            .tint(.green)
+                        }
+                    }
                 }
+            }
+            .navigationTitle(title)
+            .toolbar {
+                Button {
+                    isShowingScanner = true
+                } label: {
+                    Label("Scan", systemImage: "qrcode.viewfinder")
+                }
+            }
+            .sheet(isPresented: $isShowingScanner) {
+                CodeScannerView(codeTypes: [.qr], simulatedData: "Paul hudston\npaul@hackingwithswift.com", completion: handleScan)
             }
         }
     }
@@ -47,6 +81,23 @@ struct ProspectsView: View {
             return prospects.people.filter { !$0.isContacted }
         }
     }
+    
+    func handleScan(result: Result<ScanResult, ScanError>) {
+        isShowingScanner = false
+        
+        switch result {
+        case .success(let result):
+            let details = result.string.components(separatedBy: "\n")
+            guard details.count == 2 else { return }
+            
+            let person = Prospect()
+            person.name = details[0]
+            person.emailAddress = details[1]
+            prospects.people.append(person)
+        case .failure(let error):
+            print("Scanning failed: \(error.localizedDescription)")
+        }
+    }
 }
 
 struct ProspectsView_Previews: PreviewProvider {
@@ -54,8 +105,4 @@ struct ProspectsView_Previews: PreviewProvider {
         ProspectsView(filter: .none)
             .environmentObject(Prospects())
     }
-}
-
-enum FilterType {
-    case none, contacted, uncontacted
 }
