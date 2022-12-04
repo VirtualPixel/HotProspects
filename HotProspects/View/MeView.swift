@@ -9,8 +9,10 @@ import CoreImage.CIFilterBuiltins
 import SwiftUI
 
 struct MeView: View {
-    @State private var name = "Anonymous"
-    @State private var emailAddress = "you@yoursite.com"
+    //@State private var name: String //= "Anonymous"
+    //@State private var emailAddress: String //= "you@yoursite.com"
+    
+    @EnvironmentObject var me: User
     @State private var qrCode = UIImage()
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
@@ -18,11 +20,11 @@ struct MeView: View {
     var body: some View {
         NavigationView {
             Form {
-                TextField("Name", text: $name)
+                TextField("Name", text: $me.me.name)
                     .textContentType(.name)
                     .font(.title)
                 
-                TextField("Email Address", text: $emailAddress)
+                TextField("Email Address", text: $me.me.emailAddress)
                     .textContentType(.emailAddress)
                     .font(.title)
                 
@@ -42,8 +44,8 @@ struct MeView: View {
             }
             .navigationTitle("Your Code")
             .onAppear(perform: updateCode)
-            .onChange(of: name) { _ in updateCode() }
-            .onChange(of: emailAddress) { _ in updateCode() }
+            .onChange(of: me.me.name) { _ in updateCode() }
+            .onChange(of: me.me.emailAddress) { _ in updateCode() }
         }
     }
         
@@ -60,12 +62,14 @@ struct MeView: View {
     }
     
     func updateCode() {
-        qrCode = generateQRCode(from: "\(name)\n\(emailAddress)")
+        qrCode = generateQRCode(from: "\($me.me.name)\n\($me.me.emailAddress)")
+        me.save()
     }
 }
-
+/*
 struct MeView_Previews: PreviewProvider {
     static var previews: some View {
         MeView()
     }
 }
+*/
